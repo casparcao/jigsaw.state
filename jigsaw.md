@@ -173,8 +173,60 @@ module java.sql {
 
 可靠的配置不仅更可靠，而且更快。当一个模块中的代码引用某个包中的类型时，该包会被确定定义在了该模块中，或者该模块可读的其他模块中。因此当搜索某个具体的类型时就没有必要搜索多个模块，甚至更糟的去搜索整个类路径。  
 
-#### <a name="2.1"></a>2.4 可访问性
-#### <a name="2.1"></a>2.5 隐式可读性
+#### <a name="2.1"></a>2.4 可访问性  
+
+模块图中定义的可读性关系以及模块声明中的`exports`语句是强封装性的基础。Java编译器跟虚拟机认为一个模块的某个包中的公共类型对其他模块中的代码是`可访问性`的条件是第一个模块对第二个模块是可读的，并且第一个模块导出了那个包。比如，两个类型S跟T定义在两个不同的模块中，并且T是公共的，那么S可以访问T的条件是：  
+1. S所在模块可读去T所在模块，并且  
+2. T所在模块导出了T所在的包。  
+
+就像私有方法跟域不可用一样，透过模块边界不可访问的类型是不可用的。任何尝试访问都会得到一个编译器报告的错误，或者虚拟机抛出的`IllegalAccessError`，或者反射运行时API抛出的`IllegalAccessException`。因此即使当一个类型被定义为公共的，但是假如它所在的包没有在模块声明中被导出，那么它也只能对本模块内的代码访问。  
+
+如果一个方法或者域的外围类是可以访问的，并且该成员本身的声明也是允许访问的，那么它也可以透过模块边界被访问。  
+
+来看一下上面的模块图中的强封装性是如何工作的，我们给每个模块贴上它所导出的包的标签：  
+
+![强封装性](/images/2.4.png)  
+
+模块com.foo.app模块中的代码可以访问com.foo.bar.alpah包中的公共类型，因为com.foo.app依赖于它，因此可读取com.foo.bar模块，并且com.foo.bar模块导出了com.foo.bar.alpah包。 如com.foo.bar包含一个内部包com.foo.bar.internal，那么com.foo.app中的代码不能访问该包中的任何类型，因为com.foo.bar没有导出它。com.foo.app中的代码不能访问org.baz.qux包中的类型，因为coom.foo.app不依赖它，因此不可读去该模块。  
+
+#### <a name="2.1"></a>2.5 隐式可读性  
+
+如果一个模块可以读取另一个模块，某些情况，逻辑上也应该可以读取其他模块。  
+
+例如，平台的java.sql模块依赖java.logging跟java.xml模块，不仅因为它的代码实现中使用了这些模块中的类型，而且还因为它定义了方法签名引用了这些模块中的类型的类型。 java.sql.Driver接口中声明了下面这个公共方法：  
+
+```
+public Logger getParentLogger();
+```
+
+其中Logger是java.logging模块中导出的java.util.logging包中声明的类型。  
+
+假设，com.foo.app模块中的代码为了获取logger并且记录日志而调取了这个方法：  
+
+```
+String url = ...;
+Properties props = ...;
+Driver d = DriverManager.getDriver(url);
+Connection c = d.connect(url, props);
+d.getParentLogger().info("Connection acquired");
+```  
+
+如果com.foo.app模块的声明像上面提到的那样，那么这段代码将不能工作：getParentLogger方法返回一个Logger，它是一个在java.logging模块中声明的类型，它对com.foo.app模块是不可读的，因此上面对Logger类中的info方法的调用在编译期跟运行时都将失败，因为该类不可访问，所以该方法同样不可访问。  
+
+该问题的一个解决方案是所有依赖java.sql模块并且包含使用getParentLogger方法返回的Logger对象的代码的模块作者记得声明一个对java.logging模块的依赖。当然这种方式是不可靠的，因为它打破了最少意外的原则：如果一个模块依赖第二个模块，那么很自然的希望每个需要使用第一个模块的类型，即使是在第二个模块中定义的类型，都将对于仅仅依赖第一个模块的模块是直接可访问的。  
+
+因此我们拓展模块的声明以便一个模块可以将它所依赖的其他模块的可读性授予依赖它的任何模块。这种`隐式的可读性`通过在`requires`语句中包含一个public修饰符来表达。java.sql模块的声明实际上是这样：  
+
+```
+module java.sql {
+    requires public java.logging;
+    requires public java.xml;
+    exports java.sql;
+    exports javax.sql;
+    exports javax.transaction.xa;
+}
+```
+
 
 
 ### <a name="3"></a>3 兼容性&迁移
