@@ -340,10 +340,68 @@ module com.mysql.jdbc {
 
 为了完成这点，模块系统必须可以通过之前解析的模块来识别任何服务的使用，然后从诸多可观察模块中定位并解析提供者。  
 
+模块系统可以通过扫描模块工件中的类文件来调用ServiceLoader::load 方法来识别服务的使用，但是这样即慢又不可靠。一个模块使用特定的服务是该模块定义的基本面，因此为了效率和清晰度，我们在模块定义中使用`use`语句表达这一点：  
 
-### <a name="5"></a>5 高级话题
-#### <a name="5.1"></a>5.1 映射
-#### <a name="5.2"></a>5.2 映射可读性
+```
+module java.sql {
+    requires public java.logging;
+    requires public java.xml;
+    exports java.sql;
+    exports javax.sql;
+    exports javax.transaction.xa;
+    uses java.sql.Driver;
+}
+```
+
+就像ServiceLoader类目前所做的一样，模块系统可以通过扫描模块工件的META-INF/services资源条目来识别服务提供者。一个模块提供一个特定服务的实现同样的重要，因此我们在模块声明中使用`provides`语句来表达这一点：  
+
+```
+module com.mysql.jdbc {
+    requires java.sql;
+    requires org.slf4j;
+    exports com.mysql.jdbc;
+    provides java.sql.Driver with com.mysql.jdbc.Driver;
+}
+```
+
+现在，通过简单的阅读这些模块的声明可以看到其中一个使用了另一个提供的服务。  
+
+在模块声明中声明模块提供与模块使用关系不仅仅是提供效率跟清晰度。 这两种服务声明可以在编译期被解析来确保服务接口（如java.sql.Driver）可以被提供者及服务使用者访问到。服务提供者声明可以被进一步解析来确保提供者（如com.mysql.jdbc.Driver）确实实现了声明的服务接口。最后，可以使用预先编译和链接工具来解析服务使用声明以确保可观察的提供者在运行之前被正确的编译和链接。  
+出于迁移的目的，如果定义自动模块的JAR文件包含META-INF/services资源条目，那么每个条目都会被假设在该模块下声明了相应的provides语句。自动模块可以使用任意的可用服务。  
+
+### <a name="5"></a>5 高级话题  
+
+本文档的剩余部分涉及到的高级话题，虽然重要，不过大部分开发人员可能并不感兴趣。  
+
+#### <a name="5.1"></a>5.1 映射  
+
+为了使模块图在运行时通过反射可用，我们在java.lang.reflect包中定义了Module类，并在java.lang.module包中新定义了一些相关类型。Module类的实例代表运行时的单个模块。每个类型都在某个模块中，因此每个Class对象都有一个相关联的Module对象，可以通过Class::getModule方法返回。  
+
+模块对象的基本操作如下：  
+
+```
+package java.lang.reflect;
+
+public final class Module {
+    public String getName();
+    public ModuleDescriptor getDescriptor();
+    public ClassLoader getClassLoader();
+    public boolean canRead(Module target);
+    public boolean isExported(String packageName);
+}
+```
+
+其中ModuleDescriptor是java.lang.module包中的类，它的实例表示模块描述符；getClassLoder方法返回模块的类加载器；canRead方法判断该模块是否可以读取目标模块；以及isExported方法判断指定的包是否被模块导出。  
+
+java.lang.reflect包不是平台唯一的反射工具。编译期javax.lang.model包中会有类似的添加，以支持注解处理器以及文档工具。  
+
+#### <a name="5.2"></a>5.2 映射可读性  
+
+框架是一种在运行时使用反射来加载，检查，实例化其他类的工具。Java SE平台自身的框架例子包括服务加载器，资源束，动态代理，以及序列化，当然还有很多流行的外部框架库，像是数据库持久，依赖注入和测试。  
+
+运行时发现的类，框架必须能够访问它的某个构造器才能实例化它。然而事情并不总是这样。  
+
+例如，平台的[streaming XML parser](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/package-summary.html)，通过javax.xml.steam.XMLInputFactory系统属性来[加载并实例化](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html#newFactory--)[XMLInputFactor](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html)服务的实现，如果定义了，
 #### <a name="5.3"></a>5.3 类加载器 
 #### <a name="5.4"></a>5.4 未命名的模块
 #### <a name="5.5"></a>5.5 层
