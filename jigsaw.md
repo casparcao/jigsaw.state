@@ -41,7 +41,7 @@ module com.foo.bar { }
 
 
 ```  
-可以定义一个或多个`requires`语句来指定该模块在编译期以及运行时所依赖的其他模块的名字： 
+可以定义一个或多个`requires`语句来指定该模块在编译期以及运行时所依赖的其他模块的名字：
 
 ```
 module com.foo.bar {
@@ -77,7 +77,7 @@ com/foo/bar/alpha/Alpha.java
 
 将源文件中的模块声明与模块中的其他源文件一起转换为Java虚拟机所需的类文件是建立保真度的一种常规手段。这种方式对于开发人员相当熟悉，并且对于IDE或者构建工具的支持也不困难。尤其是IDE，可以通过requires从组件的项目描述中已经提供的信息合成子句来为现有组件提供初始模块声明的建议。
 
-#### <a name="1.2"></a>1.2 模块组件 
+#### <a name="1.2"></a>1.2 模块组件
 
 现有工具可以创建，操作和使用JAR文件，因此为了方便采用和迁移，我们定义了模块化的JAR文件。一个模块化的JAR文件就像普通的JAR文件一样，除了在根目录下还包含一个`module-info.class`文件。例如，上述`com.foo.bar`模块的jar文件中的内容可能像下面这样：
 ```
@@ -95,9 +95,9 @@ com/foo/bar/alpha/Alpha.class
 
 #### <a name="1.3"></a>1.3 模块描述符  
 
-将模块生命编译到类文件中还有一个最终的优势，就是类文件已经具备一种精确定义且可拓展的格式。因此在一个更广泛的意义上，我们可以将`module-info.class`作为**模块描述符**，其中包括源码级别的模块生命的编译格式，以及声明被初始编译后插入到类文件属性中的各种其他的信息。 
+将模块生命编译到类文件中还有一个最终的优势，就是类文件已经具备一种精确定义且可拓展的格式。因此在一个更广泛的意义上，我们可以将`module-info.class`作为**模块描述符**，其中包括源码级别的模块生命的编译格式，以及声明被初始编译后插入到类文件属性中的各种其他的信息。
 
-例如，IDE或者构建期的打包工具可以将包含像模块版本，标题，描述以及许可证等文档信息插入到属性中。可以通过模块系统的反射工具在编译期以及运行时来读取这些信息用来生成文档，诊断以及调试等。下游工具也可以使用它来构建特定于操作系统的程序包工件。将会有一系列特定的属性被标准化，但是，既然Java的类文件格式是可拓展的，那么其他的工具或者框架在必要的时候同样可以定义自己的属性。非标准的属性对模块系统本身不会造成影响。 
+例如，IDE或者构建期的打包工具可以将包含像模块版本，标题，描述以及许可证等文档信息插入到属性中。可以通过模块系统的反射工具在编译期以及运行时来读取这些信息用来生成文档，诊断以及调试等。下游工具也可以使用它来构建特定于操作系统的程序包工件。将会有一系列特定的属性被标准化，但是，既然Java的类文件格式是可拓展的，那么其他的工具或者框架在必要的时候同样可以定义自己的属性。非标准的属性对模块系统本身不会造成影响。
 
 #### <a name="1.4"></a>1.4 平台模块  
 
@@ -138,7 +138,7 @@ module java.base {
 
 #### <a name="2.1"></a>2.2 解析  
 
-假设我们有一个应用程序使用上面的com.foo.bar模块和平台的java.sql模块。包含应用程序核心的模块声明如下： 
+假设我们有一个应用程序使用上面的com.foo.bar模块和平台的java.sql模块。包含应用程序核心的模块声明如下：
 ```
 module com.foo.app {
     requires com.foo.bar;
@@ -286,7 +286,7 @@ com-foo-bar.jar和com-foo-app.jar中的代码可以继续工作，因为未命�
 
 没有好办法可以提前告知自动模块可能依赖哪些其他模块。因此在一个模块图被确定之后，自动模块可以读取任意其他的命名模块，无论自动还是显示：  
 
-![自动模块1](/images/3.3.2.png) 
+![自动模块1](/images/3.3.2.png)
 
 （这些新的可读性边确实在模块图中造成了回路，使得它有些更加难懂了，但是我们把这看作是更加灵活迁移的可容忍的结果。）  
 
@@ -332,7 +332,7 @@ module com.mysql.jdbc {
 }
 ```
 
-其中org.slf4j是驱动中使用的日志库，com.mysql.jdbc是包含java.sql.Driver服务接口实现的包。（没有必要导出驱动包，这里只是为了清晰） 
+其中org.slf4j是驱动中使用的日志库，com.mysql.jdbc是包含java.sql.Driver服务接口实现的包。（没有必要导出驱动包，这里只是为了清晰）
 
 为了使java.sql模块可以使用该驱动，ServiceLoader类必须可以通过反射实例化该驱动类；为了实现这一点，模块系统必须将驱动模块添加到模块图中并解决它的依赖，因此：  
 
@@ -401,8 +401,25 @@ java.lang.reflect包不是平台唯一的反射工具。编译期javax.lang.mode
 
 运行时发现的类，框架必须能够访问它的某个构造器才能实例化它。然而事情并不总是这样。  
 
-例如，平台的[streaming XML parser](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/package-summary.html)，通过javax.xml.steam.XMLInputFactory系统属性来[加载并实例化](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html#newFactory--)[XMLInputFactor](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html)服务的实现，如果定义了，
-#### <a name="5.3"></a>5.3 类加载器 
+例如，平台的[streaming XML parser](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/package-summary.html)，通过javax.xml.steam.XMLInputFactory系统属性来[加载并实例化](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html#newFactory--)[XMLInputFactor](http://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html)服务的实现，如果定义了，则优先于通过ServiceLoader类来发现发现提供者。忽略异常处理和安全检查，代码大致像这样：  
+
+```
+String providerName
+    = System.getProperty("javax.xml.stream.XMLInputFactory");
+if (providerName != null) {
+    Class providerClass = Class.forName(providerName, false,
+                                        Thread.getContextClassLoader());
+    Object ob = providerClass.newInstance();
+    return (XMLInputFactory)ob;
+}
+// Otherwise use ServiceLoader
+...
+```  
+在模块化环境下，只要包包含对context类加载器可知的提供者类，那么对Class:forName的调用就可以正常工作。然而，通过反射newInstance方法对提供者类构造器的调用就没那么幸运了。提供者可能是从类路径中加载的，这种情况下它位于未命名模块内，或者一些明明模块内，但是不管哪种情况，框架自身是在java.xml模块中的。该模块仅仅依赖于基模块，因此其他模块中的提供者对框架来说是不可访问到的。  
+
+
+
+#### <a name="5.3"></a>5.3 类加载器
 #### <a name="5.4"></a>5.4 未命名的模块
 #### <a name="5.5"></a>5.5 层
 #### <a name="5.6"></a>5.6 有限制的导出
